@@ -22,7 +22,7 @@ const keypos_t PROGMEM hand_swap_config[MATRIX_ROWS][MATRIX_COLS] = {
 void eeconfig_init_kb(void) {
 #ifdef BACKLIGHT_ENABLE
     backlight_enable();
-    backlight_level(3);
+    backlight_level(2);
 #endif
 #ifdef RGBLIGHT_ENABLE
     rgblight_enable(); // Enable RGB by default
