@@ -177,75 +177,27 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 
   // left rotary / slave
   if (index == 0) {
-    // if on upper layer
-    if (layer_state_is(_RAISE)) {
-      if (clockwise) {
-        // decrease brightness
-        tap_code(KC_F11);
-      } else {
-        // increase brightness
-        tap_code(KC_F12);
-      }
-
-      // // set start time to know when to release
-      // // reset start time to current time with every encoder click
-      // tab_start = timer_read();
-      //
-      // // let global code know to start tab timer
-      // tab_timer = true;
-      //
-      // // hold GUI
-      // add_mods(MOD_MASK_GUI);
-      //
-      // if (clockwise) {
-      //   // shift + tab
-      //   tap_code16(LSFT(KC_TAB));
-      // } else {
-      //   // tab
-      //   tap_code(KC_TAB);
-      // }
-      //
-      // // GUI release will be handled by matrix_scan_user()
+    if (clockwise) {
+      // undo
+      tap_code16(LGUI(KC_Z));
     } else {
-      if (clockwise) {
-        // undo
-        tap_code16(LGUI(KC_Z));
-      } else {
-        // redo
-        tap_code16(LSFT(LGUI(KC_Z)));
-      }
+      // redo
+      tap_code16(LSFT(LGUI(KC_Z)));
     }
   }
 
   // right rotary / master
   if (index == 1) {
     // note:
-    // on right side, clockwise is actually counterclockwise
+    // on right side, 'clockwise' is actually counterclockwise
 
-    // press alt when lower layer
-    // because ALT is on the right side and hard to reach when turning the right encoder
     if (layer_state_is(_LOWER)) {
-      add_mods(MOD_MASK_ALT);
-
-      // refresh mod state
-      mod_state = get_mods();
-    }
-
-    // if shift is pressed
-    if (mod_state & MOD_MASK_SHIFT) {
-      // First temporarily canceling both shifts so that
-      // shift isn't applied to the arrow keycode
-      del_mods(MOD_MASK_SHIFT);
-
       // up / down
       if (clockwise) {
         tap_code(KC_UP);
       } else {
         tap_code(KC_DOWN);
       }
-
-      // Reapplying modifier state so that the held shift key(s)
-      set_mods(mod_state);
     } else {
       // left / right
       if (clockwise) {
@@ -254,12 +206,6 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
         tap_code(KC_RIGHT);
       }
     }
-
-    // release alt
-    if (layer_state_is(_LOWER)) {
-      del_mods(MOD_MASK_ALT);
-    }
-
   }
 
   return clockwise;

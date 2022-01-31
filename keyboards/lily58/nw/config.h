@@ -43,6 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define SOFT_SERIAL_PIN D2
 
+#define RGB_DI_PIN D3
 #define RGBLED_NUM 72
 #define RGBLED_SPLIT { 36, 36 }
 #define RGBLIGHT_SPLIT
