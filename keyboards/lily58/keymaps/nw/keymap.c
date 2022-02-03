@@ -9,7 +9,7 @@ enum layer_number {
 };
 
 enum custom_keycodes {
-  TIMER = SAFE_RANGE
+  TMR = SAFE_RANGE
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -22,7 +22,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //├────────┼────────┼────────┼────────┼────────┼────────┤                          ├────────┼────────┼────────┼────────┼────────┼────────┤
      KC_LCTL, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,                               KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,
   //├────────┼────────┼────────┼────────┼────────┼────────┼────────┐        ┌────────┼────────┼────────┼────────┼────────┼────────┼────────┤
-     KC_LSFT, KC_Y,    KC_X,    KC_C,    KC_V,    KC_B,    TIMER,            RGB_TOG, KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,
+     KC_LSFT, KC_Y,    KC_X,    KC_C,    KC_V,    KC_B,    TMR,              RGB_TOG, KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,
   //└────────┴────────┴────────┴───┬────┴───┬────┴───┬────┴───┬────┘        └───┬────┴───┬────┴───┬────┴───┬────┴────────┴────────┴────────┘
                           KC_BSPC,  KC_LGUI, MO(_LOWER), KC_SPC,                  KC_ENT, MO(_RAISE), KC_RALT, KC_DEL
                        // └────────┴────────┴────────┴────────┘                 └────────┴────────┴────────┴────────┘
@@ -80,20 +80,21 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 // setup oled
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
   if (is_keyboard_master())
-    return OLED_ROTATION_0;
-  return OLED_ROTATION_270;
+    return OLED_ROTATION_270;
+  return OLED_ROTATION_0;
 }
 
 uint16_t start_time = 0;
 uint16_t elapsed_time = 0;
+bool timer_running = false;
 
 uint16_t seconds = 0;
 uint16_t minutes = 0;
 uint16_t hours = 0;
 
-uint16_t mSeconds = 0;
-uint16_t mMinutes = 0;
-uint16_t mHours = 0;
+uint8_t mSeconds = 0;
+uint8_t mMinutes = 0;
+uint8_t mHours = 0;
 
 char sSeconds[24];
 char sMinutes[24];
@@ -109,16 +110,24 @@ void start_timelog(void) {
 
 // loop on oled refresh
 void oled_task_user(void) {
-  if (is_keyboard_master()) {
-    // If you want to change the display of OLED, you need to change here
-    // oled_write(read_timelog(), false);
-  } else {
-    if (is_oled_on()) {
+  if (is_oled_on()) {
+    if (is_keyboard_master()) {
+      // master
       oled_write_ln("TIME", false);
+      oled_write_ln(" ", false);
 
-      elapsed_time = timer_elapsed(start_time);
+      if (timer_running) {
+        elapsed_time = timer_elapsed(start_time);
+      }
 
-      seconds = elapsed_time / 1000;
+      // weird way of storing seconds to prevent overflow
+      // resetting the timer regularily seems more reliable
+      if (elapsed_time / 1000 >= 1) {
+        start_time = timer_read();
+        elapsed_time = elapsed_time % 1000;
+        seconds++;
+      }
+
       minutes = seconds / 60;
       hours = minutes / 60;
 
@@ -130,17 +139,32 @@ void oled_task_user(void) {
       sprintf(sMinutes, "%u", mMinutes);
       sprintf(sHours, "%u", mHours);
 
-      if (mHours < 10) oled_write("0", false);
+      if (mHours < 10) oled_write(" ", false);
       oled_write(sHours, false);
       oled_write_ln(" h", false);
 
-      if (mMinutes < 10) oled_write("0", false);
+      if (mMinutes < 10) oled_write(" ", false);
       oled_write(sMinutes, false);
       oled_write_ln(" m", false);
 
-      if (mSeconds < 10) oled_write("0", false);
+      if (mSeconds < 10) oled_write(" ", false);
       oled_write(sSeconds, false);
       oled_write_ln(" s", false);
+
+      // add space
+      oled_write_ln(" ", false);
+
+      if (timer_running) {
+        oled_write_ln("STOP ", false);
+      } else {
+        if (elapsed_time > 1) {
+          oled_write_ln("RESET", false);
+        } else {
+          oled_write_ln("START", false);
+        }
+      }
+    } else {
+      // slave
     }
   }
 }
@@ -174,23 +198,23 @@ static bool lights_on = true;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
-    case TIMER:
+    case TMR:
       if (record->event.pressed) {
         // when keycode TIMER is pressed
-        // tap_code16(LGUI(KC_H));
-        start_timelog();
+        if (timer_running) {
+          timer_running = false;
+        } else {
+          if (elapsed_time > 1) {
+            elapsed_time = 0;
+          } else {
+            timer_running = true;
+            start_timelog();
+          }
+        }
       } else {
         // when keycode TIMER is released
       }
       break;
-    // case TMR_ON:
-    //   if (record->event.pressed) {
-    //     // when keycode TMR_ON is pressed
-    //     start_timelog();
-    //   } else {
-    //     // when keycode TMR_ON is released
-    //   }
-    //   break;
   }
 
   if (record->event.pressed) {
@@ -213,7 +237,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 
 #ifdef ENCODER_ENABLE
-bool tab_timer = false;
 unsigned long tab_start = 0;
 uint8_t mod_state;
 bool encoder_update_user(uint8_t index, bool clockwise) {
