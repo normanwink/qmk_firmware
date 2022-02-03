@@ -18,5 +18,5 @@ OLED_ENABLE= yes     # OLED display
 SLEEP_LED_ENABLE = no    # Breathing sleep LED during USB suspend
 
 # If you want to change the display of OLED, you need to change here
-SRC +=  ./lib/timelogger.c \
+# SRC +=  ./lib/timelogger.c \
 			# ./lib/rgb_state_reader.c \

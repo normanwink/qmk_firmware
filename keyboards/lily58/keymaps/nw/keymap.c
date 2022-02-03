@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include QMK_KEYBOARD_H
 
 enum layer_number {
@@ -83,66 +84,93 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
   return OLED_ROTATION_270;
 }
 
-// When you add source files to SRC in rules.mk, you can use functions.
-// const char *get_rgb(void);
-// const char *read_logo(void);
-// void set_keylog(uint16_t keycode, keyrecord_t *record);
-// const char *read_keylog(void);
-// const char *read_keylogs(void);
+uint16_t start_time = 0;
+uint16_t elapsed_time = 0;
 
-// const char *read_mode_icon(bool swap);
-// const char *read_host_led_state(void);
-void start_timelog(void);
-const char *read_timelog(void);
+uint16_t seconds = 0;
+uint16_t minutes = 0;
+uint16_t hours = 0;
 
-// static uint16_t oled_timer = 0;
+uint16_t mSeconds = 0;
+uint16_t mMinutes = 0;
+uint16_t mHours = 0;
 
-// void render_animation(uint8_t frame) {
-//     oled_write_raw_P(animation[frame], sizeof(animation[frame]));
-// }
+char sSeconds[24];
+char sMinutes[24];
+char sHours[24];
+
+void start_timelog(void) {
+  seconds = 0;
+  minutes = 0;
+  hours = 0;
+
+  start_time = timer_read();
+}
 
 // loop on oled refresh
 void oled_task_user(void) {
   if (is_keyboard_master()) {
     // If you want to change the display of OLED, you need to change here
-    oled_write(read_timelog(), false);
+    // oled_write(read_timelog(), false);
   } else {
-    // if (is_oled_on()) {
-    //   render_animation((timer_read() / 200) % 6);
-    // }
-    oled_write(read_timelog(), false);
+    if (is_oled_on()) {
+      oled_write_ln("TIME", false);
+
+      elapsed_time = timer_elapsed(start_time);
+
+      seconds = elapsed_time / 1000;
+      minutes = seconds / 60;
+      hours = minutes / 60;
+
+      mSeconds = seconds % 60;
+      mMinutes = minutes % 60;
+      mHours = hours % 99;
+
+      sprintf(sSeconds, "%u", mSeconds);
+      sprintf(sMinutes, "%u", mMinutes);
+      sprintf(sHours, "%u", mHours);
+
+      if (mHours < 10) oled_write("0", false);
+      oled_write(sHours, false);
+      oled_write_ln(" h", false);
+
+      if (mMinutes < 10) oled_write("0", false);
+      oled_write(sMinutes, false);
+      oled_write_ln(" m", false);
+
+      if (mSeconds < 10) oled_write("0", false);
+      oled_write(sSeconds, false);
+      oled_write_ln(" s", false);
+    }
   }
 }
 
-void suspend_power_down_kb(void) {
+void suspend_power_down_user(void) {
   // turn off oled
   oled_off();
 
   // turn off rgb led
   // and do not save turning off
   // (don't remember state when unplugging)
-  // rgblight_disable_noeeprom();
-
-  #ifdef RGB_MATRIX_ENABLE
-  rgb_matrix_set_suspend_state(true);
-  #endif
+  rgblight_disable_noeeprom();
 }
 
-void suspend_wakeup_init_kb(void) {
+void suspend_wakeup_init_user(void) {
   // turn on oled
   oled_on();
 
   // turn on rgb led
   // and do not save turning on
   // (don't remember state when unplugging)
-  // rgblight_enable_noeeprom();
-
-  #ifdef RGB_MATRIX_ENABLE
-  suspend_wakeup_init_user();
-  #endif
+  rgblight_enable_noeeprom();
 }
 
 #endif // OLED_ENABLE
+
+#define BACKLIGHT_TIMEOUT 5 // in minutes
+static uint16_t idle_timer = 0;
+static uint8_t halfmin_counter = 0;
+static bool lights_on = true;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
@@ -164,6 +192,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     //   }
     //   break;
   }
+
+  if (record->event.pressed) {
+    if (lights_on == false) {
+      rgblight_enable_noeeprom();
+
+      #ifdef OLED_ENABLE
+        oled_on();
+      #endif
+
+      lights_on = true;
+    }
+
+    idle_timer = timer_read();
+    halfmin_counter = 0;
+  }
+
   return true;
 }
 
@@ -224,4 +268,24 @@ void matrix_scan_user() {
   //     tab_timer = false;
   //   }
   // }
+
+  // idle_timer needs to be set one time
+  if (idle_timer == 0) idle_timer = timer_read();
+
+  // count half minutes
+  if (lights_on && timer_elapsed(idle_timer) > 30000) {
+    halfmin_counter++;
+    idle_timer = timer_read();
+  }
+
+  if (lights_on && halfmin_counter >= BACKLIGHT_TIMEOUT * 2) {
+    rgblight_disable_noeeprom();
+
+    #ifdef OLED_ENABLE
+      oled_off();
+    #endif
+
+    lights_on = false;
+    halfmin_counter = 0;
+  }
 }
