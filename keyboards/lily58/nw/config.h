@@ -54,6 +54,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define RGB_DISABLE_WHEN_USB_SUSPENDED
 #define USB_SUSPEND_WAKEUP_DELAY 200
 
+#define OLED_TIMEOUT 10000
+#define OLED_FADE_OUT
+#define OLED_FADE_OUT_INTERVAL 3
+#define OLED_UPDATE_INTERVAL 300
+
 // #define RGBLIGHT_EFFECT_KNIGHT
 // #define RGBLIGHT_MODE_KNIGHT 1
 
