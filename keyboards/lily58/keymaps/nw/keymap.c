@@ -103,10 +103,13 @@ void oled_task_user(void) {
     }
   }
 }
+#endif // OLED_ENABLE
 
 void suspend_power_down_user(void) {
   // turn off oled
-  oled_off();
+  #ifdef OLED_ENABLE
+    oled_off();
+  #endif
 
   // turn off rgb led
   // and do not save turning off
@@ -116,15 +119,15 @@ void suspend_power_down_user(void) {
 
 void suspend_wakeup_init_user(void) {
   // turn on oled
-  oled_on();
+  #ifdef OLED_ENABLE
+    oled_on();
+  #endif
 
   // turn on rgb led
   // and do not save turning on
   // (don't remember state when unplugging)
   rgblight_enable_noeeprom();
 }
-
-#endif // OLED_ENABLE
 
 #define BACKLIGHT_TIMEOUT 5 // in minutes
 static uint16_t idle_timer = 0;
