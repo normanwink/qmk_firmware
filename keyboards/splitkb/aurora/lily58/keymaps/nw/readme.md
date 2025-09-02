@@ -1,1 +1,0 @@
-This is Norman's keymap
