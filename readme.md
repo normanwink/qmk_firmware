@@ -8,6 +8,24 @@
 
 This is a keyboard firmware based on the [tmk\_keyboard firmware](https://github.com/tmk/tmk_keyboard) with some useful features for Atmel AVR and ARM controllers, and more specifically, the [OLKB product line](https://olkb.com), the [ErgoDox EZ](https://ergodox-ez.com) keyboard, and the Clueboard product line.
 
+## Installation
+
+Official documentation [here](https://docs.qmk.fm/newbs_getting_started).  
+Follow until [step 2](https://docs.qmk.fm/newbs_getting_started#set-up-your-environment), then do this:
+```
+qmk setup normanwink/qmk_firmware
+```
+
+This will set up QMK with this fork.  
+It will install it to some default directory, pay attention during the installation process so that you can find it later. After it was installed, you can move the `qmk_firmware` folder to any desired location.
+
+## Build
+
+To simplify the build process, I created a file which you can execute.
+```
+bash __build.sh
+```
+
 ## Documentation
 
 * [See the official documentation on docs.qmk.fm](https://docs.qmk.fm)
