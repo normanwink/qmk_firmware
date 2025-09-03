@@ -1,1 +1,1 @@
-qmk compile -e CONVERT_TO=liatris -kb splitkb/aurora/lily58 -km debug
+qmk compile -e CONVERT_TO=liatris -kb splitkb/aurora/lily58 -km nw
